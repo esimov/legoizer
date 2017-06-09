@@ -14,13 +14,13 @@ import (
 var quant drawer.Quantizer = drawer.Quantizer{}
 
 func main() {
-	absPath, _ := filepath.Abs("./portal.jpg")
+	absPath, _ := filepath.Abs("./gopher2.jpg")
 	img, err := loadImage(absPath)
 	if err != nil {
 		fmt.Printf("Failed to open image '%v'\n", img)
 		os.Exit(1)
 	}
-	res := quant.Process(img, 64)
+	res := quant.Process(img, 16)
 	generateImage(res)
 }
 
