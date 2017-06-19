@@ -8,7 +8,7 @@ import (
 	"time"
 	proc "github.com/esimov/legoizer/processor"
 	"github.com/fogleman/gg"
-	"github.com/lucasb-eyer/go-colorful"
+	"go-colorful"
 	"fmt"
 )
 const (
