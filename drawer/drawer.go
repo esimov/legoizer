@@ -6,10 +6,10 @@ import (
 	"math"
 	"math/rand"
 	"time"
-
 	proc "github.com/esimov/legoizer/processor"
 	"github.com/fogleman/gg"
-	//"fmt"
+	"go-colorful"
+	"fmt"
 )
 const (
 	_1x1 = iota
@@ -42,7 +42,7 @@ type Quantizer struct {
 
 var (
 	threshold uint16 = 127
-	legoMaxPiece, legoMaxHeight int = 4, 3
+	legoMaxWidth, legoMaxHeight int = 6, 2
 	idx, idy = 1, 1
 )
 
@@ -61,16 +61,18 @@ func (quant *Quantizer) Process(input image.Image, nq int) image.Image {
 	nrgbaImg := convertToNRGBA64(quantified)
 
 	for x := 0; x < dx; x += cellSize {
+		// Reset Y index after each row
 		idy = 1
 		for y := 0; y < dy; y += cellSize {
 			xx := x + (cellSize / 2)
 			yy := y + (cellSize / 2)
 			if xx < dx && yy < dy {
-				var subImg = convertToNRGBA64(nrgbaImg.SubImage(image.Rect(x, y, x + cellSize, y + cellSize)))
+				subImg := convertToNRGBA64(nrgbaImg.SubImage(image.Rect(x, y, x + cellSize, y + cellSize)))
 				cellColor := getAvgColor(subImg)
+
 				lego := dc.getCurrentLego(nrgbaImg, float64(x), float64(y), float64(cellSize))
 				rows, cols := dc.checkNeighbors(lego, nrgbaImg)
-				//fmt.Println(rows, " : ",  cols)
+
 				switch {
 				case rows == 1 && cols == 1 :
 					legoType = _1x1
@@ -98,16 +100,6 @@ func (quant *Quantizer) Process(input image.Image, nq int) image.Image {
 		idx++
 	}
 
-	/*for x := 0; x < dx; x += cellSize {
-		for y := 0; y < dy; y += cellSize {
-			xx := x + (cellSize / 2)
-			yy := y + (cellSize / 2)
-			if xx < dx && yy < dy {
-				lego := getCurrentLego(dc, nrgbaImg, float64(x), float64(y), float64(cellSize))
-				checkNeighbors(dc, lego, nrgbaImg)
-			}
-		}
-	}*/
 	newImg := dc.Image()
 	return newImg
 }
@@ -195,7 +187,6 @@ func (dc *context) generateLegoSet(x, y, xx, yy, cellSize float64, idx, idy int,
 		dc.ClosePath()
 		dc.Stroke()
 	}
-
 	drawTopBorderLine := func(x, y float64) {
 		dc.SetColor(color.RGBA{177, 177, 177, 177})
 		dc.SetLineWidth(0.05)
@@ -204,7 +195,6 @@ func (dc *context) generateLegoSet(x, y, xx, yy, cellSize float64, idx, idy int,
 		dc.ClosePath()
 		dc.Stroke()
 	}
-
 	drawRightBorderLine := func(x, y float64) {
 		dc.SetColor(color.RGBA{0, 0, 0, 177})
 		dc.SetLineWidth(0.15)
@@ -213,7 +203,6 @@ func (dc *context) generateLegoSet(x, y, xx, yy, cellSize float64, idx, idy int,
 		dc.ClosePath()
 		dc.Stroke()
 	}
-
 	drawBottomBorderLine := func(x, y float64) {
 		dc.SetColor(color.RGBA{0, 0, 0, 177})
 		dc.SetLineWidth(0.15)
@@ -262,11 +251,11 @@ func (dc *context) checkNeighbors(lego *lego, neighborCell *image.NRGBA64) (int,
 		cellColor = lego.cellColor
 		x = lego.x
 		y = lego.y
-		//bf float64 = 1.0003
+		ct float64 = 3.0
 	)
 
 	rows, cols := 1, 1
-	legoWidth := random(1, legoMaxPiece)
+	legoWidth := random(1, legoMaxWidth)
 	legoHeight := random(1, legoMaxHeight)
 
 	xi := int(x)
@@ -274,16 +263,21 @@ func (dc *context) checkNeighbors(lego *lego, neighborCell *image.NRGBA64) (int,
 
 	// Rows
 	for i := 1; ; i++ {
-		if i > legoWidth - 1 {
+		if i > legoWidth {
 			break
 		}
 		if xi*i < dc.Width() && yi*i < dc.Height() {
 			nextCell := convertToNRGBA64(neighborCell.SubImage(image.Rect(xi*i, yi, xi*i + int(cellSize), yi + int(cellSize))))
 			nextCellColor := getAvgColor(nextCell)
 
-			if cellColor.R != nextCellColor.R &&
-				cellColor.G != nextCellColor.G &&
-				cellColor.B != nextCellColor.B {
+			// Because the next cell average color might differ from the current cell color even with a small amount,
+			// we have to check if the current cell color is approximately identical with the neighboring cells.
+			c1 := colorful.Color{float64(cellColor.R >> 8), float64(cellColor.G >> 8), float64(cellColor.B >> 8)}
+			c2 := colorful.Color{float64(nextCellColor.R >> 8), float64(nextCellColor.G >> 8), float64(nextCellColor.B >> 8)}
+
+			colorThreshold := c1.DistanceCIE94(c2)
+			if colorThreshold > ct {
+				fmt.Println(rows , ":", cols)
 				break
 			}
 		}
@@ -292,20 +286,26 @@ func (dc *context) checkNeighbors(lego *lego, neighborCell *image.NRGBA64) (int,
 
 	// Columns
 	for i := 1; ; i++ {
-		if i > legoHeight - 1 {
+		if i > legoHeight {
 			break
 		}
 		if xi*i < dc.Width() && yi*i < dc.Height() {
 			nextCell := convertToNRGBA64(neighborCell.SubImage(image.Rect(xi, yi*i, xi + int(cellSize), yi*i + int(cellSize))))
 			nextCellColor := getAvgColor(nextCell)
 
-			if cellColor.R != nextCellColor.R &&
-				cellColor.G != nextCellColor.G &&
-				cellColor.B != nextCellColor.B {
+			c1 := colorful.Color{float64(cellColor.R >> 8), float64(cellColor.G >> 8), float64(cellColor.B >> 8)}
+			c2 := colorful.Color{float64(nextCellColor.R >> 8), float64(nextCellColor.G >> 8), float64(nextCellColor.B >> 8)}
+
+			colorThreshold := c1.DistanceCIE94(c2)
+			if colorThreshold > ct {
 				break
 			}
 		}
 		cols++
+	}
+	// There is no lego piece with 5 rows
+	if rows == 5 {
+		rows = 4
 	}
 	return rows, cols
 }
@@ -367,4 +367,21 @@ func max(x, y uint32) uint32 {
 
 func random(min, max int) int {
 	return rand.Intn(max - min) + min
+}
+
+func distanceRGB(c1, c2 color.NRGBA64, threshold uint16) bool {
+	var r, g, b uint16
+	rmean := (c1.R - c2.R) / 2
+	r = c1.R >> 8 - c2.R >> 8
+	g = c1.G >> 8 - c2.G >> 8
+	b = c1.B >> 8 - c2.B >> 8
+	weightR := 2 + rmean >> 8
+	weightG := uint16(4)
+	weightB := 2 + (255 - rmean) >> 8
+
+	dist := math.Sqrt(float64(weightR*r*r) + float64(weightG*g*g) + float64(weightB*b*b))
+	if  dist <= float64(threshold) {
+		return true
+	}
+	return false
 }

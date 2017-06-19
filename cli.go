@@ -20,7 +20,7 @@ func main() {
 		fmt.Printf("Failed to open image '%v'\n", img)
 		os.Exit(1)
 	}
-	res := quant.Process(img, 4)
+	res := quant.Process(img, 32)
 	generateImage(res)
 }
 
