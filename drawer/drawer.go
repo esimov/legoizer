@@ -124,8 +124,8 @@ func (quant *Quantizer) Process(input image.Image, nq int, cs int) image.Image {
 		}
 		idx++
 	}
-	newImg := dc.Image()
-	noisyImg := noise(10, newImg, newImg.Bounds().Dx(), newImg.Bounds().Dy())
+	img := dc.Image()
+	noisyImg := noise(10, img, img.Bounds().Dx(), img.Bounds().Dy())
 	return noisyImg
 }
 
