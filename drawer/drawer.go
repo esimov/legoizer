@@ -9,19 +9,25 @@ import (
 	proc "github.com/esimov/legoizer/processor"
 	"github.com/fogleman/gg"
 	"go-colorful"
-	"fmt"
 )
+
 const (
 	_1x1 = iota
-	_1x2
-	_1x3
-	_1x4
-	_1x6
+	_2x1
+	_3x1
+	_4x1
+	_6x1
 	_2x2
-	_2x3
-	_2x4
-	_2x6
+	_3x2
+	_4x2
+	_6x2
 )
+
+type legoIndexes struct {
+	idx int
+	idy int
+}
+
 type point struct {
 	x, y float64
 }
@@ -40,25 +46,44 @@ type Quantizer struct {
 	proc.Quant
 }
 
+var legos []legoIndexes
+
 var (
 	threshold uint16 = 127
-	legoMaxWidth, legoMaxHeight int = 6, 2
+	legoMaxRows, legoMaxCols int = 4, 2
 	idx, idy = 1, 1
 )
 
-func (quant *Quantizer) Process(input image.Image, nq int) image.Image {
+func (quant *Quantizer) Process(input image.Image, nq int, cs int) image.Image {
 	rand.Seed(time.Now().UTC().Unix())
-	var legoType int
+	var (
+		legoType int
+		cellSize int
+	)
 
 	dx, dy := input.Bounds().Dx(), input.Bounds().Dy()
+	imgRatio := func(w, h int) float64 {
+		var ratio float64
+		if w > h {
+			ratio = float64((w / h) * w)
+		} else {
+			ratio = float64((h / w) * h)
+		}
+		return ratio
+	}
+
+	if cs == 0 {
+		cellSize = int(round(float64(imgRatio(dx, dy)) * 0.015))
+	} else {
+		cellSize = cs
+	}
+	quantified := quant.Quantize(input, nq)
+	nrgbaImg := convertToNRGBA64(quantified)
+
 	dc := &context{gg.NewContext(dx, dy)}
 	dc.SetRGB(1, 1, 1)
 	dc.Clear()
 	dc.SetRGB(0, 0, 0)
-
-	cellSize := 30
-	quantified := quant.Quantize(input, nq)
-	nrgbaImg := convertToNRGBA64(quantified)
 
 	for x := 0; x < dx; x += cellSize {
 		// Reset Y index after each row
@@ -67,7 +92,7 @@ func (quant *Quantizer) Process(input image.Image, nq int) image.Image {
 			xx := x + (cellSize / 2)
 			yy := y + (cellSize / 2)
 			if xx < dx && yy < dy {
-				subImg := convertToNRGBA64(nrgbaImg.SubImage(image.Rect(x, y, x + cellSize, y + cellSize)))
+				subImg := nrgbaImg.SubImage(image.Rect(x, y, x + cellSize, y + cellSize)).(*image.NRGBA64)
 				cellColor := getAvgColor(subImg)
 
 				lego := dc.getCurrentLego(nrgbaImg, float64(x), float64(y), float64(cellSize))
@@ -76,22 +101,22 @@ func (quant *Quantizer) Process(input image.Image, nq int) image.Image {
 				switch {
 				case rows == 1 && cols == 1 :
 					legoType = _1x1
-				case rows == 1 && cols == 2 :
-					legoType = _1x2
-				case rows == 1 && cols == 3 :
-					legoType = _1x3
-				case rows == 1 && cols == 4 :
-					legoType = _1x4
-				case rows == 1 && cols == 6 :
-					legoType = _1x6
+				case rows == 2 && cols == 1 :
+					legoType = _2x1
+				case rows == 3 && cols == 1 :
+					legoType = _3x1
+				case rows == 4 && cols == 1 :
+					legoType = _4x1
+				case rows == 6 && cols == 1 :
+					legoType = _6x1
 				case rows == 2 && cols == 2 :
 					legoType = _2x2
-				case rows == 2 && cols == 3 :
-					legoType = _2x3
-				case rows == 2 && cols == 4 :
-					legoType = _2x4
-				case rows == 2 && cols == 6 :
-					legoType = _2x6
+				case rows == 3 && cols == 2 :
+					legoType = _3x2
+				case rows == 4 && cols == 2 :
+					legoType = _4x2
+				case rows == 6 && cols == 2 :
+					legoType = _6x2
 				}
 				dc.generateLegoSet(float64(x), float64(y), float64(xx), float64(yy), float64(cellSize), idx, idy, cellColor, legoType)
 			}
@@ -99,21 +124,19 @@ func (quant *Quantizer) Process(input image.Image, nq int) image.Image {
 		}
 		idx++
 	}
-
 	newImg := dc.Image()
-	return newImg
+	noisyImg := noise(10, newImg, newImg.Bounds().Dx(), newImg.Bounds().Dy())
+	return noisyImg
 }
 
 // Create the lego piece
 func (dc *context) createLegoPiece(x, y, xx, yy, cellSize float64, c color.NRGBA64) *lego {
 	// Brightness factor
 	var bf float64 = 1.0005
-
 	// Background
 	dc.DrawRectangle(x, y, x + cellSize, y + cellSize)
 	dc.SetRGBA(float64(c.R/255 ^ 0xff) * bf, float64(c.G/255 ^ 0xff) * bf, float64(c.B/255 ^ 0xff) * bf, 1)
 	dc.Fill()
-
 	// Create the shadow effect
 	dc.Push()
 	// Top circle
@@ -161,22 +184,22 @@ func (dc *context) generateLegoSet(x, y, xx, yy, cellSize float64, idx, idy int,
 	switch legoType {
 	case _1x1 :
 		rows, cols = 1, 1
-	case _1x2 :
-		rows, cols = 1, 2
-	case _1x3 :
-		rows, cols = 1, 3
-	case _1x4 :
-		rows, cols = 1, 4
-	case _1x6 :
-		rows, cols = 1, 6
+	case _2x1 :
+		rows, cols = 2, 1
+	case _3x1 :
+		rows, cols = 3, 1
+	case _4x1 :
+		rows, cols = 4, 1
+	case _6x1 :
+		rows, cols = 6, 1
 	case _2x2 :
 		rows, cols = 2, 2
-	case _2x3 :
-		rows, cols = 2, 3
-	case _2x4 :
-		rows, cols = 2, 4
-	case _2x6 :
-		rows, cols = 2, 6
+	case _3x2 :
+		rows, cols = 3, 2
+	case _4x2 :
+		rows, cols = 4, 2
+	case _6x2 :
+		rows, cols = 6, 2
 	}
 
 	drawLeftBorderLine := func(x, y float64) {
@@ -214,13 +237,18 @@ func (dc *context) generateLegoSet(x, y, xx, yy, cellSize float64, idx, idy int,
 
 	// Create the lego piece, then trace the borders.
 	dc.createLegoPiece(x, y, float64(xx), float64(yy), float64(cellSize), c)
-	if idx % rows == 0 {
-		drawLeftBorderLine(x - (cellSize * float64(rows)) + cellSize + 1, y)
-		drawRightBorderLine(x, y)
-	}
-	if idy % cols == 0 {
-		drawTopBorderLine(x, y - (cellSize * float64(cols)) + cellSize + 1)
-		drawBottomBorderLine(x, y)
+
+	legoExists := findLegoIndex(legos, int(x), int(y))
+	// Draw the borders only if index do not exits in the index table
+	if !legoExists {
+		if idx % rows == 0 {
+			drawLeftBorderLine(x - (cellSize * float64(rows)) + cellSize + 1, y)
+			drawRightBorderLine(x, y)
+		}
+		if idy % cols == 0 {
+			drawTopBorderLine(x, y - (cellSize * float64(cols)) + cellSize + 1)
+			drawBottomBorderLine(x, y)
+		}
 	}
 
 	return &lego{
@@ -246,17 +274,19 @@ func (dc *context) getCurrentLego(cell *image.NRGBA64, x, y, cellSize float64) *
 // Check if the current lego color is identical with the neighbors color.
 // Returns the number of rows and columns identical with the current lego, with the rows & columns representing the lego type.
 func (dc *context) checkNeighbors(lego *lego, neighborCell *image.NRGBA64) (int, int) {
+	var lastIdx, lastIdy int = 1, 1
 	var (
 		cellSize = lego.cellSize
 		cellColor = lego.cellColor
 		x = lego.x
 		y = lego.y
-		ct float64 = 3.0
+		ct float64 = 7.0
+		currentRowCellColor color.NRGBA64
 	)
 
 	rows, cols := 1, 1
-	legoWidth := random(1, legoMaxWidth)
-	legoHeight := random(1, legoMaxHeight)
+	legoWidth := random(rows, legoMaxRows)
+	legoHeight := random(cols, legoMaxCols)
 
 	xi := int(x)
 	yi := int(y)
@@ -267,7 +297,7 @@ func (dc *context) checkNeighbors(lego *lego, neighborCell *image.NRGBA64) (int,
 			break
 		}
 		if xi*i < dc.Width() && yi*i < dc.Height() {
-			nextCell := convertToNRGBA64(neighborCell.SubImage(image.Rect(xi*i, yi, xi*i + int(cellSize), yi + int(cellSize))))
+			nextCell := neighborCell.SubImage(image.Rect(xi*i, yi, xi*i + int(cellSize), yi + int(cellSize))).(*image.NRGBA64)
 			nextCellColor := getAvgColor(nextCell)
 
 			// Because the next cell average color might differ from the current cell color even with a small amount,
@@ -277,7 +307,8 @@ func (dc *context) checkNeighbors(lego *lego, neighborCell *image.NRGBA64) (int,
 
 			colorThreshold := c1.DistanceCIE94(c2)
 			if colorThreshold > ct {
-				fmt.Println(rows , ":", cols)
+				currentRowCellColor = cellColor
+				lastIdx = xi*i
 				break
 			}
 		}
@@ -290,14 +321,15 @@ func (dc *context) checkNeighbors(lego *lego, neighborCell *image.NRGBA64) (int,
 			break
 		}
 		if xi*i < dc.Width() && yi*i < dc.Height() {
-			nextCell := convertToNRGBA64(neighborCell.SubImage(image.Rect(xi, yi*i, xi + int(cellSize), yi*i + int(cellSize))))
+			nextCell := neighborCell.SubImage(image.Rect(xi, yi*i, xi + int(cellSize), yi*i + int(cellSize))).(*image.NRGBA64)
 			nextCellColor := getAvgColor(nextCell)
 
 			c1 := colorful.Color{float64(cellColor.R >> 8), float64(cellColor.G >> 8), float64(cellColor.B >> 8)}
 			c2 := colorful.Color{float64(nextCellColor.R >> 8), float64(nextCellColor.G >> 8), float64(nextCellColor.B >> 8)}
 
 			colorThreshold := c1.DistanceCIE94(c2)
-			if colorThreshold > ct {
+			if colorThreshold > ct || currentRowCellColor.R != cellColor.R {
+				lastIdy = yi*i
 				break
 			}
 		}
@@ -307,6 +339,12 @@ func (dc *context) checkNeighbors(lego *lego, neighborCell *image.NRGBA64) (int,
 	if rows == 5 {
 		rows = 4
 	}
+	// Save the generated lego indexes into the index table.
+	// We'll verify if the lego borders have been traced based on the index value.
+	if !findLegoIndex(legos, lastIdx, lastIdy) {
+		legos = append(legos, legoIndexes{lastIdx, lastIdy})
+	}
+
 	return rows, cols
 }
 
@@ -327,9 +365,9 @@ func getAvgColor(img *image.NRGBA64) color.NRGBA64 {
 	}
 
 	return color.NRGBA64{
-		R: uint16(r / (bounds.Dx() * bounds.Dy())),
-		G: uint16(g / (bounds.Dx() * bounds.Dy())),
-		B: uint16(b / (bounds.Dx() * bounds.Dy())),
+		R: maxUint16(0, minUint16(65535, uint16(r / (bounds.Dx() * bounds.Dy())))),
+		G: maxUint16(0, minUint16(65535, uint16(g / (bounds.Dx() * bounds.Dy())))),
+		B: maxUint16(0, minUint16(65535, uint16(b / (bounds.Dx() * bounds.Dy())))),
 		A: 255,
 	}
 }
@@ -349,26 +387,17 @@ func convertToNRGBA64(img image.Image) *image.NRGBA64 {
 	return nrgba
 }
 
-// Returns the smallest number between two numbers.
-func min(x, y uint32) uint32 {
-	if x < y {
-		return x
-	}
-	return y
+// Round number down.
+func round(x float64) float64 {
+	return math.Floor(x)
 }
 
-// Returns the biggest number between two numbers.
-func max(x, y uint32) uint32 {
-	if x > y {
-		return x
-	}
-	return y
-}
-
+// Generate a random number between min & max.
 func random(min, max int) int {
 	return rand.Intn(max - min) + min
 }
 
+// Return the closest RGB color in the euclidean space.
 func distanceRGB(c1, c2 color.NRGBA64, threshold uint16) bool {
 	var r, g, b uint16
 	rmean := (c1.R - c2.R) / 2
@@ -384,4 +413,31 @@ func distanceRGB(c1, c2 color.NRGBA64, threshold uint16) bool {
 		return true
 	}
 	return false
+}
+
+// Check if the processed lego index exists in the lego table.
+func findLegoIndex(legos []legoIndexes, ix, iy int) bool {
+	for i := 0; i < len(legos); i++ {
+		idx, idy := legos[i].idx, legos[i].idy
+		if  idx == ix && idy == iy {
+			return true
+		}
+	}
+	return false
+}
+
+// Returns the smallest number between two numbers.
+func minUint16(x, y uint16) uint16 {
+	if x < y {
+		return x
+	}
+	return y
+}
+
+// Returns the biggest number between two numbers.
+func maxUint16(x, y uint16) uint16 {
+	if x > y {
+		return x
+	}
+	return y
 }
