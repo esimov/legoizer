@@ -9,6 +9,7 @@ import (
 	proc "github.com/esimov/legoizer/processor"
 	"github.com/fogleman/gg"
 	"go-colorful"
+	"fmt"
 )
 
 const (
@@ -22,11 +23,6 @@ const (
 	_4x2
 	_6x2
 )
-
-type legoIndexes struct {
-	idx int
-	idy int
-}
 
 type point struct {
 	x, y float64
@@ -46,6 +42,11 @@ type Quantizer struct {
 	proc.Quant
 }
 
+type legoIndexes struct {
+	idx int
+	idy int
+}
+
 var legos []legoIndexes
 
 var (
@@ -59,6 +60,7 @@ func (quant *Quantizer) Process(input image.Image, nq int, cs int) image.Image {
 	var (
 		legoType int
 		cellSize int
+		current, total, progress float64
 	)
 
 	dx, dy := input.Bounds().Dx(), input.Bounds().Dy()
@@ -85,12 +87,15 @@ func (quant *Quantizer) Process(input image.Image, nq int, cs int) image.Image {
 	dc.Clear()
 	dc.SetRGB(0, 0, 0)
 
+	total = math.Floor(float64(dx * dy / (cellSize * cellSize)))
 	for x := 0; x < dx; x += cellSize {
 		// Reset Y index after each row
 		idy = 1
 		for y := 0; y < dy; y += cellSize {
 			xx := x + (cellSize / 2)
 			yy := y + (cellSize / 2)
+			current = math.Floor(float64(idx * dy / cellSize))
+
 			if xx < dx && yy < dy {
 				subImg := nrgbaImg.SubImage(image.Rect(x, y, x + cellSize, y + cellSize)).(*image.NRGBA64)
 				cellColor := getAvgColor(subImg)
@@ -122,7 +127,14 @@ func (quant *Quantizer) Process(input image.Image, nq int, cs int) image.Image {
 			}
 			idy++
 		}
+		if current < total {
+			progress = math.Floor(float64(current / total) * 100.0)
+			showProgress(progress)
+		}
 		idx++
+	}
+	if progress < 100 {
+		showProgress(100)
 	}
 	img := dc.Image()
 	noisyImg := noise(10, img, img.Bounds().Dx(), img.Bounds().Dy())
@@ -241,7 +253,7 @@ func (dc *context) generateLegoSet(x, y, xx, yy, cellSize float64, idx, idy int,
 	legoExists := findLegoIndex(legos, int(x), int(y))
 	// Draw the borders only if index do not exits in the index table
 	if !legoExists {
-		if idx % rows == 0 {
+		if idx % rows == 0 && !legoExists {
 			drawLeftBorderLine(x - (cellSize * float64(rows)) + cellSize + 1, y)
 			drawRightBorderLine(x, y)
 		}
@@ -302,8 +314,8 @@ func (dc *context) checkNeighbors(lego *lego, neighborCell *image.NRGBA64) (int,
 
 			// Because the next cell average color might differ from the current cell color even with a small amount,
 			// we have to check if the current cell color is approximately identical with the neighboring cells.
-			c1 := colorful.Color{float64(cellColor.R >> 8), float64(cellColor.G >> 8), float64(cellColor.B >> 8)}
-			c2 := colorful.Color{float64(nextCellColor.R >> 8), float64(nextCellColor.G >> 8), float64(nextCellColor.B >> 8)}
+			c1 := colorful.Color{R: float64(cellColor.R >> 8), G: float64(cellColor.G >> 8), B: float64(cellColor.B >> 8)}
+			c2 := colorful.Color{R: float64(nextCellColor.R >> 8), G: float64(nextCellColor.G >> 8), B: float64(nextCellColor.B >> 8)}
 
 			colorThreshold := c1.DistanceCIE94(c2)
 			if colorThreshold > ct {
@@ -324,8 +336,8 @@ func (dc *context) checkNeighbors(lego *lego, neighborCell *image.NRGBA64) (int,
 			nextCell := neighborCell.SubImage(image.Rect(xi, yi*i, xi + int(cellSize), yi*i + int(cellSize))).(*image.NRGBA64)
 			nextCellColor := getAvgColor(nextCell)
 
-			c1 := colorful.Color{float64(cellColor.R >> 8), float64(cellColor.G >> 8), float64(cellColor.B >> 8)}
-			c2 := colorful.Color{float64(nextCellColor.R >> 8), float64(nextCellColor.G >> 8), float64(nextCellColor.B >> 8)}
+			c1 := colorful.Color{R: float64(cellColor.R >> 8), G: float64(cellColor.G >> 8), B: float64(cellColor.B >> 8)}
+			c2 := colorful.Color{R: float64(nextCellColor.R >> 8), G: float64(nextCellColor.G >> 8), B: float64(nextCellColor.B >> 8)}
 
 			colorThreshold := c1.DistanceCIE94(c2)
 			if colorThreshold > ct || currentRowCellColor.R != cellColor.R {
@@ -440,4 +452,17 @@ func maxUint16(x, y uint16) uint16 {
 		return x
 	}
 	return y
+}
+
+// Show progress status.
+func showProgress(progress float64) {
+	fmt.Printf("  \r %v%% [", progress)
+	for p := 0; p < 100; p += 3 {
+		if progress > float64(p) {
+			fmt.Print("=")
+		} else {
+			fmt.Print(" ")
+		}
+	}
+	fmt.Printf("] \r")
 }

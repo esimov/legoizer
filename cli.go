@@ -22,9 +22,6 @@ var (
 )
 
 func main() {
-	// Channel to signal the completion event
-	done := make(chan struct{})
-
 	// Parse the command-line arguments
 	flag.Parse()
 
@@ -34,19 +31,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Print("Rendering image...")
+	fmt.Println("Generating legoized image...")
 	now := time.Now()
-	progress(done)
 
-	func(done chan struct{}) {
-		res := quant.Process(img, *colors, *legoSize)
-		generateImage(res, *outPath)
-		done <- struct{}{}
-	}(done)
+	res := quant.Process(img, *colors, *legoSize)
+	generateImage(res, *outPath)
 
 	since := time.Since(now)
-	fmt.Println("\nDone✓")
-	fmt.Printf("Rendered in: %.2fs\n", since.Seconds())
+	fmt.Println("\n Done✓")
+	fmt.Printf("Generated in: %.2fs\n", since.Seconds())
 }
 
 // Loads an image from a file path.
@@ -76,20 +69,4 @@ func generateImage(input image.Image, outPath string) error {
 		return err
 	}
 	return nil
-}
-
-// Function to visualize the rendering progress
-func progress(done chan struct{}) {
-	ticker := time.NewTicker(time.Millisecond * 200)
-
-	go func() {
-		for {
-			select {
-			case <-ticker.C:
-				fmt.Print(".")
-			case <-done:
-				ticker.Stop()
-			}
-		}
-	}()
 }
