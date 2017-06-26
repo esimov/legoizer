@@ -51,7 +51,7 @@ var legos []legoIndexes
 
 var (
 	threshold uint16 = 127
-	legoMaxRows, legoMaxCols int = 4, 2
+	legoMaxRows, legoMaxCols int = 3, 2
 	idx, idy = 1, 1
 )
 
@@ -253,7 +253,7 @@ func (dc *context) generateLegoSet(x, y, xx, yy, cellSize float64, idx, idy int,
 	legoExists := findLegoIndex(legos, int(x), int(y))
 	// Draw the borders only if index do not exits in the index table
 	if !legoExists {
-		if idx % rows == 0 && !legoExists {
+		if idx % rows == 0 {
 			drawLeftBorderLine(x - (cellSize * float64(rows)) + cellSize + 1, y)
 			drawRightBorderLine(x, y)
 		}
@@ -314,8 +314,16 @@ func (dc *context) checkNeighbors(lego *lego, neighborCell *image.NRGBA64) (int,
 
 			// Because the next cell average color might differ from the current cell color even with a small amount,
 			// we have to check if the current cell color is approximately identical with the neighboring cells.
-			c1 := colorful.Color{R: float64(cellColor.R >> 8), G: float64(cellColor.G >> 8), B: float64(cellColor.B >> 8)}
-			c2 := colorful.Color{R: float64(nextCellColor.R >> 8), G: float64(nextCellColor.G >> 8), B: float64(nextCellColor.B >> 8)}
+			c1 := colorful.Color{
+				R: float64(cellColor.R >> 8),
+				G: float64(cellColor.G >> 8),
+				B: float64(cellColor.B >> 8),
+			}
+			c2 := colorful.Color{
+				R: float64(nextCellColor.R >> 8),
+				G: float64(nextCellColor.G >> 8),
+				B: float64(nextCellColor.B >> 8),
+			}
 
 			colorThreshold := c1.DistanceCIE94(c2)
 			if colorThreshold > ct {
@@ -336,8 +344,16 @@ func (dc *context) checkNeighbors(lego *lego, neighborCell *image.NRGBA64) (int,
 			nextCell := neighborCell.SubImage(image.Rect(xi, yi*i, xi + int(cellSize), yi*i + int(cellSize))).(*image.NRGBA64)
 			nextCellColor := getAvgColor(nextCell)
 
-			c1 := colorful.Color{R: float64(cellColor.R >> 8), G: float64(cellColor.G >> 8), B: float64(cellColor.B >> 8)}
-			c2 := colorful.Color{R: float64(nextCellColor.R >> 8), G: float64(nextCellColor.G >> 8), B: float64(nextCellColor.B >> 8)}
+			c1 := colorful.Color{
+				R: float64(cellColor.R >> 8),
+				G: float64(cellColor.G >> 8),
+				B: float64(cellColor.B >> 8),
+			}
+			c2 := colorful.Color{
+				R: float64(nextCellColor.R >> 8),
+				G: float64(nextCellColor.G >> 8),
+				B: float64(nextCellColor.B >> 8),
+			}
 
 			colorThreshold := c1.DistanceCIE94(c2)
 			if colorThreshold > ct || currentRowCellColor.R != cellColor.R {
@@ -456,7 +472,7 @@ func maxUint16(x, y uint16) uint16 {
 
 // Show progress status.
 func showProgress(progress float64) {
-	fmt.Printf("  \r %v%% [", progress)
+	fmt.Printf("  \r  %v%% [", progress)
 	for p := 0; p < 100; p += 3 {
 		if progress > float64(p) {
 			fmt.Print("=")

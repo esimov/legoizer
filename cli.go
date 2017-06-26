@@ -38,7 +38,7 @@ func main() {
 	generateImage(res, *outPath)
 
 	since := time.Since(now)
-	fmt.Println("\n Done✓")
+	fmt.Println("\n  Done✓")
 	fmt.Printf("Generated in: %.2fs\n", since.Seconds())
 }
 
