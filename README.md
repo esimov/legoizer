@@ -24,7 +24,7 @@ Usage of legoizer:
     	Lego size     
 ```     
 
-The application take take the source image and output the legoized imgage into the destination folder.
+The application take take the source image and output the legoized image into the destination folder.
 
 | Source image | Legoized image
 |:--:|:--:|
