@@ -29,8 +29,8 @@ The application take take the source image and output the legoized image into th
 | Source image | Legoized image
 |:--:|:--:|
 | <img src="https://user-images.githubusercontent.com/883386/27582530-e4095cd8-5b39-11e7-97f4-1a457857c80c.png"> | <img src="https://user-images.githubusercontent.com/883386/27582636-42c42d84-5b3a-11e7-8f60-15ca7cf4f2ce.png"> |
-| <img src="https://user-images.githubusercontent.com/883386/27582571-fea42c9e-5b39-11e7-8357-6ed2a425fdd1.jpg"> | <img src="https://user-images.githubusercontent.com/883386/27582651-4d1cb99a-5b3a-11e7-8bd1-1095d265b373.png"> | 
-| <img src="https://user-images.githubusercontent.com/883386/27582916-54d7b27e-5b3b-11e7-84b7-5209b878c2ca.jpg" > | <img src="https://user-images.githubusercontent.com/883386/27582932-67795126-5b3b-11e7-82bd-4c4df11d4f5a.png"> | 
+| <img src="https://user-images.githubusercontent.com/883386/27582916-54d7b27e-5b3b-11e7-84b7-5209b878c2ca.jpg" > | <img src="https://user-images.githubusercontent.com/883386/27582932-67795126-5b3b-11e7-82bd-4c4df11d4f5a.png"> |
+| <img src="https://user-images.githubusercontent.com/883386/27582571-fea42c9e-5b39-11e7-8357-6ed2a425fdd1.jpg"> | <img src="https://user-images.githubusercontent.com/883386/27582651-4d1cb99a-5b3a-11e7-8bd1-1095d265b373.png"> |  
 
 ### Discalimer
 
