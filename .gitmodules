@@ -1,0 +1,6 @@
+[submodule "vendor/github.com/fogleman/gg"]
+	path = vendor/github.com/fogleman/gg
+	url = https://github.com/fogleman/gg
+[submodule "vendor/github.com/lucasb-eyer/go-colorful"]
+	path = vendor/github.com/lucasb-eyer/go-colorful
+	url = https://github.com/lucasb-eyer/go-colorful/
