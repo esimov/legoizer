@@ -6,7 +6,7 @@
 
 ### Install
 
-`go get -u github.com/esimov/legoizer`
+`$ go get -u github.com/esimov/legoizer`
 
 ### Run
 
@@ -24,7 +24,7 @@ Usage of legoizer:
     	Lego size     
 ```     
 
-The application take take the source image and output the legoized image into the destination folder.
+The application take the source image and output the generated image into the destination folder.
 
 | Source image | Legoized image
 |:--:|:--:|
@@ -34,7 +34,7 @@ The application take take the source image and output the legoized image into th
 
 ### Discalimer
 
-This is a simple toy, so it does not have any commercial usage. However if exists any interest for this app (like the possibility to count the needed type of bricks for the construction of a possible real lego), i will be more than happy to develop it further.
+This is a simple toy, so it does not have any commercial usage. However if exists any interest for this app (like the possibility to count the needed type of bricks for the construction of a possible real lego), or to create a web interface i will be happy to develop it further.
 
 ## License
 
