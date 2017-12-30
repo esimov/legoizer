@@ -1,16 +1,15 @@
 # legoizer
 
 **Legoizer** is a simple tool to generate lego-like images taking as input the original image and converting it to lego bricks. This process consists in two steps: 
-* *_First_:* the image is converted to it's quantified representation to reduce the number of colors. 
-* *_Second_:* the bricks are generated based on the curently processed cell color compared to it's neighboring cells average color.
+1. The image is converted to it's quantified representation to reduce the number of colors. 
+2. The bricks are generated based on the curently processed cell color compared to it's neighboring cells average color.
 
 ### Install
 
 `$ go get -u github.com/esimov/legoizer`
 
 ### Run
-
-After the build you can type `legoizer --help` to get the currently supported commands.
+Type `legoizer --help` to get the currently supported commands.
 
 ```
 Usage of legoizer:
