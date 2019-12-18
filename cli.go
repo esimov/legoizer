@@ -1,24 +1,25 @@
 package main
 
 import (
-	"image"
-	"os"
-	"log"
-	"image/png"
-	_ "image/jpeg"
-	"fmt"
 	"flag"
-	"github.com/esimov/legoizer/drawer"
+	"fmt"
+	"image"
+	_ "image/jpeg"
+	"image/png"
+	"log"
+	"os"
 	"time"
+
+	"github.com/esimov/legoizer/drawer"
 )
 
 var (
-	quant drawer.Quantizer = drawer.Quantizer{}
+	quant = drawer.Quantizer{}
 
-	inPath    = flag.String("in", "", "Input path")
-	outPath   = flag.String("out", "", "Output path")
-	legoSize  = flag.Int("size", 0, "Lego size")
-	colors	  = flag.Int("colors", 128, "Number of colors")
+	inPath   = flag.String("in", "", "Input path")
+	outPath  = flag.String("out", "", "Output path")
+	legoSize = flag.Int("size", 0, "Lego size")
+	colors   = flag.Int("colors", 128, "Number of colors")
 )
 
 func main() {
@@ -42,7 +43,7 @@ func main() {
 	fmt.Printf("Generated in: %.2fs\n", since.Seconds())
 }
 
-// Loads an image from a file path.
+// loadImage loads an image from a source path.
 func loadImage(path string) (image.Image, error) {
 	sf, err := os.Open(path)
 	if err != nil {
@@ -56,7 +57,7 @@ func loadImage(path string) (image.Image, error) {
 	return img, nil
 }
 
-// Generate the resulted image.
+// generateImage generates the resulted image.
 func generateImage(input image.Image, outPath string) error {
 	fq, err := os.Create(outPath)
 	if err != nil {
