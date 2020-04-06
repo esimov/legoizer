@@ -4,25 +4,26 @@ import (
 	"flag"
 	"fmt"
 	"image"
-	_ "image/jpeg"
+	"image/jpeg"
 	"image/png"
 	"log"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/esimov/legoizer/drawer"
 )
 
-var (
-	quant = drawer.Quantizer{}
-
-	inPath   = flag.String("in", "", "Input path")
-	outPath  = flag.String("out", "", "Output path")
-	legoSize = flag.Int("size", 0, "Lego size")
-	colors   = flag.Int("colors", 128, "Number of colors")
-)
-
 func main() {
+	var (
+		quant = drawer.Quantizer{}
+
+		inPath   = flag.String("in", "", "Input path")
+		outPath  = flag.String("out", "", "Output path")
+		legoSize = flag.Int("size", 0, "Lego size")
+		colors   = flag.Int("colors", 128, "Number of colors")
+	)
+
 	// Parse the command-line arguments
 	flag.Parse()
 
@@ -32,7 +33,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println("Generating legoized image...")
+	fmt.Println("Generating the legoized image...")
 	now := time.Now()
 
 	res := quant.Process(img, *colors, *legoSize)
@@ -65,9 +66,19 @@ func generateImage(input image.Image, outPath string) error {
 	}
 	defer fq.Close()
 
-	if err = png.Encode(fq, input); err != nil {
-		log.Fatal(err)
-		return err
+	ext := filepath.Ext(fq.Name())
+
+	switch ext {
+	case ".jpg", ".jpeg":
+		if err = jpeg.Encode(fq, input, &jpeg.Options{Quality: 100}); err != nil {
+			log.Fatal(err)
+			return err
+		}
+	case ".png":
+		if err = png.Encode(fq, input); err != nil {
+			log.Fatal(err)
+			return err
+		}
 	}
 	return nil
 }
