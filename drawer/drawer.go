@@ -57,7 +57,7 @@ var (
 	idx, idy           = 1, 1
 )
 
-// Process is the main entry method to generate the lego bricks based on the provided source image.
+// Process is the main function responsible to generate the lego bricks based on the provided source image.
 func (quant *Quantizer) Process(input image.Image, nq int, cs int) image.Image {
 	rand.Seed(time.Now().UTC().Unix())
 	var (
@@ -145,7 +145,7 @@ func (quant *Quantizer) Process(input image.Image, nq int, cs int) image.Image {
 	return noisyImg
 }
 
-// createLegoPiece draws the lego piece
+// createLegoPiece creates the lego piece
 func (dc *context) createLegoPiece(x, y, xx, yy, cellSize float64, c color.NRGBA64) *lego {
 	// Brightness factor
 	var bf = 1.0005
@@ -193,8 +193,8 @@ func (dc *context) createLegoPiece(x, y, xx, yy, cellSize float64, c color.NRGBA
 	}
 }
 
-// generateLegoSet generates the lego block compounded by the lego pieces.
-// This function trace the lego borders on the intersection of columns and rows.
+// generateLegoSet creates the lego block constituted by the lego pieces.
+// This function traces the lego borders on the intersection of columns and rows.
 func (dc *context) generateLegoSet(x, y, xx, yy, cellSize float64, idx, idy int, c color.NRGBA64, legoType int) *lego {
 	var rows, cols int
 	switch legoType {
@@ -255,7 +255,7 @@ func (dc *context) generateLegoSet(x, y, xx, yy, cellSize float64, idx, idy int,
 	dc.createLegoPiece(x, y, float64(xx), float64(yy), float64(cellSize), c)
 
 	legoExists := findLegoIndex(legos, int(x), int(y))
-	// Draw the borders only if index do not exits in the index table.
+	// Draw the borders only if index does not exists in the index table.
 	if !legoExists {
 		if idx%rows == 0 {
 			drawLeftBorderLine(x-(cellSize*float64(rows))+cellSize+1, y)
@@ -275,7 +275,7 @@ func (dc *context) generateLegoSet(x, y, xx, yy, cellSize float64, idx, idy int,
 }
 
 // getCurrentLego returns the current lego's first pixel color.
-// We don't need to get all the colors of the cell, since we averaged the cell color.
+// We don't need to get all the colors of the cell, since we are averaging the cell color.
 func (dc *context) getCurrentLego(cell *image.NRGBA64, x, y, cellSize float64) *lego {
 	// Get the first pixel color
 	var c = cell.NRGBA64At(int(x), int(y))
